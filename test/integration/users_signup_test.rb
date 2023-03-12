@@ -15,7 +15,7 @@ class UsersSignupTest < ActionDispatch::IntegrationTest
     assert_select 'div.field_with_errors'
   end
 
-  test "alid signup information" do
+  test "valid signup information" do
     get signup_path
     assert_difference 'User.count', 1 do
       post users_path, params: { user: { name:  "user1",
@@ -24,7 +24,7 @@ class UsersSignupTest < ActionDispatch::IntegrationTest
                                          password_confirmation: "foobar" } }
       follow_redirect!
       assert_template 'users/show'
-      assert flash[:success]
+      assert is_logged_in?
     end
 
   end
