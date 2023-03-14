@@ -1,4 +1,5 @@
 class User < ApplicationRecord
+  attr_accessor :remember_token
   before_save { self.email = email.downcase }
   # before_save { email.downcase! }
   validates :name, presence: true, length: { maximum: 50 }
@@ -11,10 +12,50 @@ class User < ApplicationRecord
                       length: { minimum: 6 }
   has_secure_password
 
-  # 渡された文字列のハッシュ値を返す
-  def User.digest(string)
-    cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST :
-                                                  BCrypt::Engine.cost
-    BCrypt::Password.create(string, cost: cost)
+  
+  # class << self
+    def User.digest(string)
+      # 渡された文字列のハッシュ値を返す
+      cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST :
+                                                    BCrypt::Engine.cost
+      BCrypt::Password.create(string, cost: cost)
+    end
+    # ランダムなトークンを返す
+    def User.new_token
+      SecureRandom.urlsafe_base64
+    end
+  # end
+
+  # 永続セッションのためにユーザーをデータベースに記憶する
+  def remember
+    self.remember_token = User.new_token
+    update_attribute(:remember_digest, User.digest(remember_token))
+    remember_digest
+  end
+
+  # セッションハイジャック防止のためにセッショントークンを返す
+  # この記憶ダイジェストを再利用しているのは単に利便性のため
+  def session_token
+    remember_digest || remember
+  end
+
+  # 渡されたトークンがダイジェストと一致したらtrueを返す
+  def authenticated?(remember_token)
+    return false if remember_digest.nil?
+    BCrypt::Password.new(remember_digest).is_password?(remember_token)
+  end
+
+  # ユーザーのログイン情報を破棄する
+  def forget
+    update_attribute(:remember_digest, nil)
   end
 end
+
+# BCrypt::Password.create はdigest生成
+# digest_token = BCrypt::Password.create('000000')
+
+# BCrypt::Password.new は認証
+# BCrypt::Password.new(digest_token) == '000000' => true
+
+# .is_password?は上記と同義のBCrypt::Passwordのメソッド
+# BCrypt::Password.new(hashed_password) == '000000' => true
