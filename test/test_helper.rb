@@ -21,6 +21,10 @@ class ActiveSupport::TestCase
   def log_in_as(user)
     session[:user_id] = user.id
   end
+
+  def log_out_as
+    session[:user_id] = nil
+  end
 end
 
 
