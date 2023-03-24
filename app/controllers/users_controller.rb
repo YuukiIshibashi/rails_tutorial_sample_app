@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  before_action :loged_in_user, only: [:edit, :update, :index, :destroy]
+  before_action :logged_in_user, only: [:edit, :update, :index, :destroy]
   before_action :correct_user, only: [:edit, :update]
   before_action :admin_user,     only: :destroy
 
@@ -13,6 +13,7 @@ class UsersController < ApplicationController
 
   def show
     @user = User.find(params[:id])
+    @microposts = @user.microposts.paginate(page: params[:page])
     redirect_to root_url and return unless @user.activated?
   end
 
@@ -53,14 +54,6 @@ class UsersController < ApplicationController
 
     def user_params
       params.require(:user).permit(:name, :email, :password, :password_confirmation)
-    end
-
-    def loged_in_user
-      unless logged_in?
-        flash[:danger] = "Please log in."
-        store_locatoin
-        redirect_to login_url, status: :see_other
-      end
     end
 
      # 正しいユーザーかどうか確認
