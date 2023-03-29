@@ -84,4 +84,63 @@ class UserTest < ActiveSupport::TestCase
     end
   end
 
+  test "should follow and unfollow a user" do
+    user = users(:michael)
+    other_user = users(:archer)
+    assert_not user.following?(other_user)
+    assert_difference "Relationship.count", 1 do
+      user.follow(other_user)
+      assert user.following.include?(other_user)
+      assert user.following?(other_user)
+      assert other_user.followers.include?(user)
+    end
+    assert_difference "Relationship.count", -1 do
+      user.unfollow(other_user)
+      assert_not user.following.include?(other_user)
+      assert_not user.following?(other_user)
+    end
+    user.follow(user)
+    assert_not user.following?(user)
+  end
+
+  test "feed should have the right posts" do
+    michael = users(:michael)
+    archer  = users(:archer)
+    lana    = users(:lana)
+    # フォローしているユーザーの投稿を確認
+    lana.microposts.each do |post_following|
+      assert michael.feed.include?(post_following)
+    end
+    # フォロワーがいるユーザー自身の投稿を確認
+    michael.microposts.each do |post_self|
+      assert michael.feed.include?(post_self)
+    end
+    # フォローしていないユーザーの投稿を確認
+    archer.microposts.each do |post_unfollowed|
+      assert_not michael.feed.include?(post_unfollowed)
+    end
+  end
+
 end
+
+# class FeedShow < ActiveSupport::TestCase
+#   def setup
+#     @michael = users(:michael)
+#     @archer = users(:archer)
+#     @lana = users(:lana)
+#   end
+# end
+
+# class FeedShowTest < FeedShow
+
+#   test "feedに自身とfollowしているユーザの投稿が表示される" do
+#     get user_path(@michael)
+#     @michael.microposts.each do |post|
+#       assert_select 'span', text: post.content
+#     end
+#     @lana.microposts.each do |post|
+#       assert_select 'span', text: post.content
+#     end
+#     assert_select "a[href=?]", user_path(@archer), count: 0
+#   end
+# end
